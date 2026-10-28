@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 汉语拼音看音写词 · 1-9年级生字词智能听写默写 Web App
 
-## Getting Started
+专为手机和平板优化的中文拼音默写与笔顺字形智能评测系统，已针对 Vercel 部署进行深度优化。
 
-First, run the development server:
+## 🌟 核心功能一览
+
+### 1. 账号权限控制
+- **固定测试账号登录**：用户名 `gamer`，密码 `Diffraction1`。
+- **权限拦截**：暂未开放自由注册功能，所有后续听写默写、错题笔记本、学习报告与导出功能均须登录后使用。
+- **数据绑定**：所有学习进度、掌握生字列表、错字库、错词库与该账号持久绑定（支持离线持久缓存与导出）。
+
+### 2. 看拼音写汉字（田字格默写系统）
+- **覆盖全量 1-9 年级常用字**：严选涵盖《义务教育语文课程标准》全部 **3,502** 个常用汉字。
+- **全词生字最小重复算法**：
+  - 默写词语中严格避免汉字无意义重复，以最高效率达成 1-9 年级生字全覆盖；
+  - 优先选用 **4 字成语**与 **4 字精品词语**；
+  - 无法组成 4 字词的生字，以高频 **2 字词或 3 字词**形式自然呈现。
+- **智能笔顺与字形检验**：
+  - 屏幕内嵌红线田字格 / 米字格，针对触摸屏（手机、平板、Apple Pencil、手写笔）优化。
+  - 用户手写输入时，系统严格校验每一笔的**笔画笔顺**与**字形结构**，两者皆对才判定通过。
+- **智能化错题分支处理**：
+  - **单字错误**：若词语中某字笔顺或字形错误，系统单独调出该字的动态笔顺范字演示，并将其自动加入**错字库**。
+  - **整词未掌握**：若整词不会写（或点击“不会写”），系统全景展示该词所有汉字的标准笔顺动画，并将其加入**错词库**。
+  - **强制连续写对 3 遍**：加入错字库或错词库的内容，用户必须严格按正确笔顺与字形**连写 3 遍**（期间若错任意一笔，该遍立即清空重写）。
+  - **排期重测**：订正完成后自动加入后续复习重考队列。
+
+### 3. 错字错词本与全量导出
+- **学情总览**：实时统计 1-9 年级 3502 生字覆盖率、各学段（低段/中段/高段/初中）词语掌握度。
+- **多格式导出支持**：
+  1. **田字格字帖打印导出 (Printable PDF)**：自动排版为 A4 打印级田字格练习帖，包含拼音、范字、描红格与练习格，支持浏览器一键打印或另存为 PDF。
+  2. **CSV / Excel 电子表格**：包含词语、拼音、年级、释义、错误次数与掌握状态，内置 UTF-8 BOM 兼容 Excel。
+  3. **结构化 JSON 完整备份**：方便备份与迁移学员数据。
+  4. **纯文本汇总**：一键复制成绩单与错题列表。
+
+---
+
+## 🚀 本地运行与开发
 
 ```bash
+# 安装依赖
+npm install
+
+# 启动开发服务器
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# 访问应用
+open http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🌐 部署至 Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+本项目为原生 Next.js 14 App Router 应用，无额外外部服务端依赖，零配置即可一键部署到 Vercel：
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. 将代码推送到 GitHub / GitLab 仓库。
+2. 在 [Vercel](https://vercel.com) 控制台点击 **"Add New Project"** 并导入此仓库。
+3. Framework Preset 选择 **Next.js**，保持默认设置。
+4. 点击 **Deploy**，片刻后即可获得全球 CDN 加速的访问链接。
