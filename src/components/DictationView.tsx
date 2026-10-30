@@ -44,6 +44,7 @@ export const DictationView: React.FC = () => {
   const [keyReset, setKeyReset] = useState(0);
   const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
   const [recentFailuresCount, setRecentFailuresCount] = useState(0);
+  const [engineMode, setEngineMode] = useState<'smart' | 'strict'>('smart');
 
   // Mistake modal state
   const [modalState, setModalState] = useState<{
@@ -334,8 +335,35 @@ export const DictationView: React.FC = () => {
 
       {/* Main Tianzige Writing Grid */}
       <div className="w-full flex flex-col items-center justify-center py-3 sm:py-6">
+        {/* Engine mode switcher */}
+        <div className="flex items-center justify-center gap-1.5 mb-3 bg-slate-100 p-1 rounded-xl">
+          <button
+            type="button"
+            onClick={() => setEngineMode('smart')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              engineMode === 'smart'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+            <span>智能手写识别（支持微歪、不重合）</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setEngineMode('strict')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              engineMode === 'strict'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span>严格临摹</span>
+          </button>
+        </div>
+
         <div
-          key={`word_grid_${currentWord.id}_${keyReset}`}
+          key={`word_grid_${currentWord.id}_${keyReset}_${engineMode}`}
           className="flex items-center justify-center gap-2 sm:gap-4 flex-nowrap"
         >
           {currentWord.chars.map((char, idx) => {
@@ -354,6 +382,7 @@ export const DictationView: React.FC = () => {
                   word={currentWord.word}
                   size={boxSize}
                   mode="quiz"
+                  recognitionEngine={engineMode}
                   isActive={isActive}
                   isCompleted={st.completed}
                   hasMistake={st.mistakes > 0}

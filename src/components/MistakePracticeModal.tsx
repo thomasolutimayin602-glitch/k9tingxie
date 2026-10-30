@@ -215,6 +215,7 @@ export const MistakePracticeModal: React.FC<MistakePracticeModalProps> = ({
                   word={wordItem.word}
                   size={148}
                   mode="quiz"
+                  recognitionEngine="smart"
                   showOutline={false}
                   onMistake={handleMistake}
                   onCharComplete={handleCharComplete}
