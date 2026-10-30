@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLearning } from '@/context/LearningContext';
 import { AppTab } from '@/types';
 import { soundManager } from '@/utils/sound';
+import { StrokeDiagnosticModal } from './StrokeDiagnosticModal';
 import {
   BookOpen,
   Edit3,
@@ -14,6 +15,7 @@ import {
   LogOut,
   User,
   Layers,
+  Activity,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -33,6 +35,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab }) => {
   } = useLearning();
 
   const [soundEnabled, setSoundEnabled] = useState(soundManager.enabled);
+  const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
 
   const toggleSound = () => {
     soundManager.enabled = !soundManager.enabled;
@@ -122,6 +125,17 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab }) => {
 
           {/* Right Controls */}
           <div className="flex items-center gap-1 sm:gap-2">
+            {/* Trajectory Diagnostics button */}
+            <button
+              type="button"
+              onClick={() => setIsDiagnosticOpen(true)}
+              className="p-1.5 sm:px-2.5 sm:py-1 text-slate-600 hover:text-amber-800 rounded-xl hover:bg-amber-50 border border-slate-200 transition-colors flex items-center gap-1 text-xs"
+              title="书写轨迹与失败原因分析"
+            >
+              <Activity className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+              <span className="hidden md:inline font-medium">轨迹诊断</span>
+            </button>
+
             {/* Audio Toggle */}
             <button
               type="button"
@@ -185,6 +199,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab }) => {
           </div>
         )}
       </div>
+
+      <StrokeDiagnosticModal
+        isOpen={isDiagnosticOpen}
+        onClose={() => setIsDiagnosticOpen(false)}
+      />
     </header>
   );
 };

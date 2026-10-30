@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLearning } from '@/context/LearningContext';
 import { TianzigeBox } from './TianzigeBox';
 import { MistakePracticeModal } from './MistakePracticeModal';
+import { StrokeDiagnosticModal } from './StrokeDiagnosticModal';
 import { soundManager } from '@/utils/sound';
 import confetti from 'canvas-confetti';
 import {
@@ -16,6 +17,8 @@ import {
   Eye,
   CheckCircle,
   Sparkles,
+  Activity,
+  Sliders,
 } from 'lucide-react';
 
 export const DictationView: React.FC = () => {
@@ -39,6 +42,8 @@ export const DictationView: React.FC = () => {
   const [activeCharIndex, setActiveCharIndex] = useState(0);
   const [showExplanation, setShowExplanation] = useState(false);
   const [keyReset, setKeyReset] = useState(0);
+  const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
+  const [recentFailuresCount, setRecentFailuresCount] = useState(0);
 
   // Mistake modal state
   const [modalState, setModalState] = useState<{
@@ -91,6 +96,7 @@ export const DictationView: React.FC = () => {
 
   // Handle stroke mistake for a specific character
   const handleCharMistake = useCallback(() => {
+    setRecentFailuresCount(c => c + 1);
     setCharStatuses(prev => {
       const next = [...prev];
       if (next[activeCharIndex]) {
@@ -269,6 +275,17 @@ export const DictationView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsDiagnosticOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100 transition-colors shadow-xs"
+              title="查看书写轨迹与失败原因分析"
+            >
+              <Activity className="w-3.5 h-3.5 text-rose-600 animate-pulse" />
+              <span>轨迹诊断与容错</span>
+              <Sliders className="w-3 h-3 text-slate-400" />
+            </button>
+
             <span className="text-xs text-slate-500 font-mono">
               第 <strong className="text-amber-700 font-bold">{currentIndex + 1}</strong> / {totalInFilter} 词
             </span>
@@ -334,6 +351,7 @@ export const DictationView: React.FC = () => {
                 <TianzigeBox
                   character={char}
                   pinyin={currentWord.pinyinArr[idx]}
+                  word={currentWord.word}
                   size={boxSize}
                   mode="quiz"
                   isActive={isActive}
@@ -349,8 +367,25 @@ export const DictationView: React.FC = () => {
           })}
         </div>
 
+        {/* Diagnostic Banner if failing */}
+        {recentFailuresCount >= 2 && (
+          <div className="mt-2.5 text-xs bg-rose-50 border border-rose-200 text-rose-700 px-3.5 py-1.5 rounded-xl flex items-center justify-between gap-2 max-w-lg animate-fadeIn">
+            <div className="flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+              <span>多次判定未通过？可检查是否倒下笔或调大容错度</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsDiagnosticOpen(true)}
+              className="text-amber-800 font-bold underline shrink-0 hover:text-amber-900"
+            >
+              查看诊断
+            </button>
+          </div>
+        )}
+
         {/* Writing Tips */}
-        <div className="text-xs text-slate-400 mt-3 text-center">
+        <div className="text-xs text-slate-400 mt-2 text-center">
           点按单个田字格可切换当前书写字 · 支持手指、触控笔或鼠标顺滑书写
         </div>
       </div>
@@ -425,6 +460,12 @@ export const DictationView: React.FC = () => {
         failedCharPinyin={modalState.failedCharPinyin}
         wordItem={currentWord}
         onFinish={handleModalFinish}
+      />
+
+      {/* Stroke Diagnostic & Trajectory Analysis Modal */}
+      <StrokeDiagnosticModal
+        isOpen={isDiagnosticOpen}
+        onClose={() => setIsDiagnosticOpen(false)}
       />
     </div>
   );

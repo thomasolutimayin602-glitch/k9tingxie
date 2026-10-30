@@ -3,10 +3,25 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import HanziWriter from 'hanzi-writer';
 import { soundManager } from '@/utils/sound';
+import {
+  analyzeAndLogStroke,
+  getLeniencySetting,
+  HanziWriterStrokeData,
+} from '@/utils/strokeLogger';
+
+interface HanziCharData {
+  strokes: string[];
+  medians: number[][][];
+}
+
+interface HanziQuizSummary {
+  totalMistakes: number;
+}
 
 export interface TianzigeBoxProps {
   character: string;
   pinyin?: string;
+  word?: string;
   size?: number;
   mode?: 'quiz' | 'animate' | 'static' | 'view';
   isActive?: boolean;
@@ -19,11 +34,13 @@ export interface TianzigeBoxProps {
   strokeColor?: string;
   className?: string;
   autoStartQuiz?: boolean;
+  leniency?: number;
 }
 
 export const TianzigeBox: React.FC<TianzigeBoxProps> = ({
   character,
   pinyin,
+  word,
   size = 140,
   mode = 'quiz',
   isActive = false,
@@ -36,37 +53,91 @@ export const TianzigeBox: React.FC<TianzigeBoxProps> = ({
   strokeColor = '#1e293b',
   className = '',
   autoStartQuiz = true,
+  leniency,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const writerRef = useRef<HanziWriter | null>(null);
+  const charDataRef = useRef<HanziCharData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnimating, setIsAnimating] = useState(false);
+
+  const activeLeniency = typeof leniency === 'number' ? leniency : getLeniencySetting();
 
   const startQuiz = useCallback((writerInstance?: HanziWriter) => {
     const writer = writerInstance || writerRef.current;
     if (!writer) return;
 
-    writer.quiz({
-      onMistake: (strokeData) => {
-        soundManager.playMistake();
-        if (onMistake) {
-          onMistake(character, strokeData.strokeNum);
-        }
-      },
-      onCorrectStroke: (strokeData) => {
-        soundManager.playCorrectStroke();
-        if (onCorrectStroke) {
-          onCorrectStroke(character, strokeData.strokeNum);
-        }
-      },
-      onComplete: (summary) => {
-        soundManager.playCharPass();
-        if (onCharComplete) {
-          onCharComplete(character, summary.totalMistakes);
-        }
-      },
-    });
-  }, [character, onMistake, onCorrectStroke, onCharComplete]);
+    try {
+      writer.quiz({
+        leniency: activeLeniency,
+        acceptBackwardsStrokes: false,
+        onMistake: (strokeData: HanziWriterStrokeData) => {
+          soundManager.playMistake();
+
+          // Extract standard median points for this stroke if available
+          let expectedPoints: Array<{ x: number; y: number }> | undefined = undefined;
+          if (charDataRef.current?.medians?.[strokeData.strokeNum]) {
+            expectedPoints = charDataRef.current.medians[strokeData.strokeNum].map((p: number[]) => ({
+              x: p[0],
+              y: p[1],
+            }));
+          }
+
+          // Diagnostic log & upload to Vercel API
+          analyzeAndLogStroke({
+            username: 'gamer',
+            character,
+            word,
+            strokeIndex: strokeData.strokeNum,
+            isCorrect: false,
+            strokeData,
+            expectedStrokePoints: expectedPoints,
+            boxSize: size,
+            leniency: activeLeniency,
+          });
+
+          if (onMistake) {
+            onMistake(character, strokeData.strokeNum);
+          }
+        },
+        onCorrectStroke: (strokeData: HanziWriterStrokeData) => {
+          soundManager.playCorrectStroke();
+
+          let expectedPoints: Array<{ x: number; y: number }> | undefined = undefined;
+          if (charDataRef.current?.medians?.[strokeData.strokeNum]) {
+            expectedPoints = charDataRef.current.medians[strokeData.strokeNum].map((p: number[]) => ({
+              x: p[0],
+              y: p[1],
+            }));
+          }
+
+          analyzeAndLogStroke({
+            username: 'gamer',
+            character,
+            word,
+            strokeIndex: strokeData.strokeNum,
+            isCorrect: true,
+            strokeData,
+            expectedStrokePoints: expectedPoints,
+            boxSize: size,
+            leniency: activeLeniency,
+          });
+
+          if (onCorrectStroke) {
+            onCorrectStroke(character, strokeData.strokeNum);
+          }
+        },
+        onComplete: (summary: HanziQuizSummary) => {
+          soundManager.playCharPass();
+          if (onCharComplete) {
+            onCharComplete(character, summary.totalMistakes);
+          }
+        },
+      });
+    } catch (e) {
+      console.warn('Error starting HanziWriter quiz:', e);
+    }
+  }, [character, word, size, activeLeniency, onMistake, onCorrectStroke, onCharComplete]);
 
   const playAnimation = useCallback((writerInstance?: HanziWriter) => {
     const writer = writerInstance || writerRef.current;
@@ -91,7 +162,7 @@ export const TianzigeBox: React.FC<TianzigeBoxProps> = ({
       const writer = HanziWriter.create(containerRef.current, character, {
         width: size,
         height: size,
-        padding: size * 0.1,
+        padding: size * 0.08,
         showOutline: mode === 'animate' || mode === 'static' || mode === 'view' ? true : showOutline,
         showCharacter: mode === 'static' || mode === 'view',
         strokeColor: strokeColor,
@@ -102,9 +173,10 @@ export const TianzigeBox: React.FC<TianzigeBoxProps> = ({
         strokeFadeDuration: 250,
         strokeAnimationSpeed: 1,
         delayBetweenStrokes: 180,
-        showHintAfterMisses: mode === 'quiz' ? 0 : 3, // strict quiz mode: no auto hint revealing strokes!
+        showHintAfterMisses: mode === 'quiz' ? 0 : 3,
         renderer: 'svg',
-        onLoadCharDataSuccess: () => {
+        onLoadCharDataSuccess: (data: unknown) => {
+          charDataRef.current = data as HanziCharData;
           setIsLoading(false);
         },
         onLoadCharDataError: (err) => {
@@ -143,11 +215,11 @@ export const TianzigeBox: React.FC<TianzigeBoxProps> = ({
         </div>
       )}
 
-      {/* Tianzige Frame */}
+      {/* Tianzige Frame - WITHOUT CSS transform or scale to ensure 100% pixel-accurate coordinates */}
       <div
-        className={`relative rounded-xl overflow-hidden shadow-sm transition-all duration-200 border-2 ${
+        className={`relative rounded-xl overflow-hidden shadow-xs border-2 ${
           isActive
-            ? 'ring-4 ring-amber-400 ring-offset-2 border-amber-500 shadow-md scale-[1.02]'
+            ? 'ring-4 ring-amber-400 ring-offset-1 border-amber-500 shadow-md'
             : isCompleted
             ? hasMistake
               ? 'border-rose-400 ring-2 ring-rose-200'

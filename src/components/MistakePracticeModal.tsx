@@ -212,6 +212,7 @@ export const MistakePracticeModal: React.FC<MistakePracticeModalProps> = ({
                 <TianzigeBox
                   character={targetChars[activeCharIndex]}
                   pinyin={targetPinyins[activeCharIndex]}
+                  word={wordItem.word}
                   size={148}
                   mode="quiz"
                   showOutline={false}
